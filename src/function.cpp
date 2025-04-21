@@ -7,7 +7,6 @@ FunctionRegistry FunctionRegistry::default_registry() {
 
     reg.register_function("sin", [](const std::vector<double>& args) {
         if (args.size() != 1) throw std::runtime_error("sin expects 1 argument");
-        std::printf("sin(%.3f)\n", args[0]);
         return std::sin(args[0]);
     });
 

@@ -1,7 +1,10 @@
-#include "cppexprpars/tokenizer.hpp"
-#include "cppexprpars/parser.hpp"
-#include "cppexprpars/expr_node.hpp"
-#include "cppexprpars/function.hpp"
+// #include "cppexprpars/tokenizer.hpp"
+// #include "cppexprpars/parser.hpp"
+// #include "cppexprpars/expr_node.hpp"
+// #include "cppexprpars/function.hpp"
+
+#include "cppexprpars.hpp"
+
 #include <iostream>
 #include <cmath>
 #include <stdexcept>
@@ -37,7 +40,7 @@ void test_variable_expression() {
 
     EvaluationContext context = EvaluationContext::default_context();
     context.set_variable("x", 10.0);
-    cppexprpars::VariableExprNode::set_default_context(&context);
+    cppexprpars::set_default_context(&context);
 
     // Use the simple variable resolver to resolve "x"
     auto expr = parser.parse();
@@ -60,7 +63,7 @@ void test_function_expression() {
 
     // Set up the FunctionRegistry
     FunctionRegistry registry = FunctionRegistry::default_registry();
-    cppexprpars::FuncExprNode::set_default_registry(&registry);
+    cppexprpars::set_default_registry(&registry);
 
     auto expr = parser.parse();
     assert(std::abs(expr->evaluate() - 4.0) < 1e-6); // sqrt(16) = 4

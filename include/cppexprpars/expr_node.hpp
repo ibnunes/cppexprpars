@@ -94,10 +94,13 @@ private:
 
 using VariableResolver = std::function<ExprFloat(const std::string&)>;
 
+void set_default_context(const EvaluationContext* context);
+EvaluationContext* get_default_context();
+
 class VariableExprNode : public ExprNode {
 public:
     // Use predefined context
-    VariableExprNode(std::string name, const EvaluationContext* context = &default_context_)
+    VariableExprNode(std::string name, const EvaluationContext* context = get_default_context())
         : name_(std::move(name)),
             resolver_([context](const std::string& varName) {
                 return context->get_variable(varName);
@@ -111,22 +114,22 @@ public:
         return resolver_(name_);
     }
 
-    static void set_default_context(const EvaluationContext* context);
+    inline void set_context(const EvaluationContext* context);
+    inline void set_context_as_default();
 
 private:
     std::string name_;
     VariableResolver resolver_;
-
-    static EvaluationContext default_context_;
 };
 
-void set_default_context(const EvaluationContext* context);
+void set_default_registry(const FunctionRegistry* registry);
+FunctionRegistry* get_default_registry();
 
 class FuncExprNode : public ExprNode {
 public:
     FuncExprNode(std::string name,
                     std::vector<ExprNodePtr> args,
-                    const FunctionRegistry* registry = &default_registry_)
+                    const FunctionRegistry* registry = get_default_registry())
         : name_(std::move(name)),
             args_(std::move(args)),
             registry_(registry) {}
@@ -141,14 +144,13 @@ public:
         return fn(evaluated_args);
     }
 
-    static void set_default_registry(const FunctionRegistry* registry);
+    inline void set_registry(const FunctionRegistry* registry);
+    inline void set_registry_as_default();
 
 private:
     std::string name_;
     std::vector<ExprNodePtr> args_;
     const FunctionRegistry* registry_;
-
-    static FunctionRegistry default_registry_;
 };
 
 class ConstantExprNode : public ExprNode {

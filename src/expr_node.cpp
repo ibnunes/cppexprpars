@@ -2,16 +2,42 @@
 
 namespace cppexprpars {
 
-FunctionRegistry FuncExprNode::default_registry_ = FunctionRegistry::default_registry();
+static FunctionRegistry /*FuncExprNode::*/default_registry_ = FunctionRegistry::default_registry();
 
-void FuncExprNode::set_default_registry(const FunctionRegistry* registry) {
-    FuncExprNode::default_registry_ = *registry;
+void set_default_registry(const FunctionRegistry* registry) {
+    default_registry_ = *registry;
 }
 
-EvaluationContext VariableExprNode::default_context_ = EvaluationContext::default_context();
+FunctionRegistry* get_default_registry() {
+    return &default_registry_;
+}
 
-void VariableExprNode::set_default_context(const EvaluationContext* context) {
-    VariableExprNode::default_context_ = *context;
+void FuncExprNode::set_registry(const FunctionRegistry* registry) {
+    this->registry_ = registry;
+}
+
+void FuncExprNode::set_registry_as_default() {
+    set_registry(&default_registry_);
+}
+
+static EvaluationContext default_context_ = EvaluationContext::default_context();
+
+void set_default_context(const EvaluationContext* context) {
+    default_context_ = *context;
+}
+
+EvaluationContext* get_default_context() {
+    return &default_context_;
+}
+
+void VariableExprNode::set_context(const EvaluationContext* context) {
+    this->resolver_ = [context](const std::string& varName) {
+        return context->get_variable(varName);
+    };
+}
+
+void VariableExprNode::set_context_as_default() {
+    set_context(&default_context_);
 }
 
 const EvaluationContext& EvaluationContext::default_context() {

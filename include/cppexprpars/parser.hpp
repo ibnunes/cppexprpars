@@ -10,7 +10,17 @@ namespace cppexprpars {
 
 class Parser {
 public:
-    explicit Parser(Tokenizer tokenizer) : tokenizer_(std::move(tokenizer)) {}
+    explicit Parser(Tokenizer tokenizer) :
+        tokenizer_(std::move(tokenizer)),
+        context_(cppexprpars::get_default_context()),
+        registry_(cppexprpars::get_default_registry())
+        {}
+
+    explicit Parser(Tokenizer tokenizer, EvaluationContext* context, FunctionRegistry* registry) :
+        tokenizer_(std::move(tokenizer)),
+        context_(context),
+        registry_(registry)
+        {}
 
     std::unique_ptr<ExprNode> parse() {
         auto expr = parse_expression();
@@ -20,8 +30,19 @@ public:
         return expr;
     }
 
+    inline void set_context(EvaluationContext* context) {
+        this->context_ = context;
+    }
+
+    inline void set_registry(FunctionRegistry* registry) {
+        this->registry_ = registry;
+    }
+
 private:
     Tokenizer tokenizer_;
+
+    EvaluationContext* context_;
+    FunctionRegistry* registry_;
 
     std::unique_ptr<ExprNode> parse_expression(int precedence = 0) {
         auto lhs = parse_primary();
@@ -46,8 +67,6 @@ private:
     std::unique_ptr<ExprNode> parse_primary() {
         Token token = tokenizer_.current();
         tokenizer_.next_token();
-
-        std::printf("(%s) %s, %.3f\n", strOfTok[(int)token.type], token.text.c_str(), token.number_value);
 
         switch (token.type) {
             case TokenType::Number:
@@ -75,11 +94,11 @@ private:
                     }
                     tokenizer_.next_token();
 
-                    return std::make_unique<FuncExprNode>(token.text, std::move(args));
+                    return std::make_unique<FuncExprNode>(token.text, std::move(args), registry_);
                 }
 
                 // Just a variable
-                return std::make_unique<VariableExprNode>(token.text);
+                return std::make_unique<VariableExprNode>(token.text, context_);
             }
 
             case TokenType::LeftParen: {
@@ -117,6 +136,7 @@ private:
     }
 };
 
+/*
 class ExprParser {
 public:
     ExprParser() :
@@ -135,13 +155,17 @@ public:
         return context_.get_variable(name);
     }
 
+    inline void register_function(const std::string& name, Function fn) {
+        registry_.register_function(name, fn);
+    }
+
     ExprFloat evaluate() {
         Tokenizer tokenizer(expression_);
-        Parser parser(std::move(tokenizer));
-
-        // TODO?
-        // parser.set_context(&context_);
-        // parser.set_registry(&registry_);
+        Parser parser(
+            std::move(tokenizer),
+            &context_,
+            &registry_
+        );
 
         auto node = parser.parse();
         return node->evaluate();
@@ -152,5 +176,6 @@ private:
     EvaluationContext context_;
     FunctionRegistry registry_;
 };
+*/
 
 } // namespace cppexprpars
