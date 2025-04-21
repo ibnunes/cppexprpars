@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+CTestTestfile.cmake
+
+# Build directory
+/build/
+
+# Visual Studio Code settings
+.vscode/
