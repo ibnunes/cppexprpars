@@ -20,8 +20,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Create the main library
 add_library(cppexprpars STATIC
     include/cppexprpars.hpp
-    src/expr_node.cpp
-    src/function.cpp
     src/cppexprpars.cpp
 )
 
