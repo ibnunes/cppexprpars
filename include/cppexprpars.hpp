@@ -44,10 +44,11 @@
 namespace cppexprpars {
 
 using ExprFloat = double;
-using ExprInt = uint64_t;
+using ExprInt   = uint64_t;
 
-using Function = std::function<ExprFloat(const std::vector<ExprFloat>&)>;
-using VariableResolver = std::function<ExprFloat(const std::string&)>;
+using Function             = std::function<ExprFloat(const std::vector<ExprFloat>&)>;
+using ArityMismatchHandler = std::function<void(const std::string& func_name, size_t expected, size_t received)>;
+using VariableResolver     = std::function<ExprFloat(const std::string&)>;
 
 
 enum class BinaryOp {
@@ -108,11 +109,15 @@ using ExprNodePtr = std::unique_ptr<ExprNode>;
 
 class BinaryExprNode : public ExprNode {
 public:
-    BinaryExprNode(BinaryOp op, ExprNodePtr left, ExprNodePtr right)
-        : op_(op), left_(std::move(left)), right_(std::move(right)) {}
+    BinaryExprNode(BinaryOp op, ExprNodePtr left, ExprNodePtr right) :
+        op_(op),
+        left_(std::move(left)),
+        right_(std::move(right)) {}
 
-    BinaryExprNode(char op, ExprNodePtr left, ExprNodePtr right)
-        : op_(charToBinaryOp(op)), left_(std::move(left)), right_(std::move(right)) {}
+    BinaryExprNode(char op, ExprNodePtr left, ExprNodePtr right) :
+        op_(charToBinaryOp(op)),
+        left_(std::move(left)),
+        right_(std::move(right)) {}
 
     ExprFloat evaluate() const override;
 
@@ -120,7 +125,7 @@ protected:
     static BinaryOp charToBinaryOp(char op_char);
 
 private:
-    BinaryOp op_;
+    BinaryOp    op_;
     ExprNodePtr left_;
     ExprNodePtr right_;
 };
@@ -129,11 +134,13 @@ private:
 
 class UnaryExprNode : public ExprNode {
 public:
-    UnaryExprNode(UnaryOp op, ExprNodePtr operand)
-        : op_(op), operand_(std::move(operand)) {}
+    UnaryExprNode(UnaryOp op, ExprNodePtr operand) :
+        op_(op),
+        operand_(std::move(operand)) {}
 
-    UnaryExprNode(char op, ExprNodePtr operand)
-        : op_(charToUnaryOp(op)), operand_(std::move(operand)) {}
+    UnaryExprNode(char op, ExprNodePtr operand) :
+        op_(charToUnaryOp(op)),
+        operand_(std::move(operand)) {}
 
     ExprFloat evaluate() const override;
 
@@ -141,7 +148,7 @@ protected:
     static UnaryOp charToUnaryOp(char op_char);
 
 private:
-    UnaryOp op_;
+    UnaryOp     op_;
     ExprNodePtr operand_;
 };
 
@@ -149,7 +156,13 @@ private:
 
 class FunctionRegistry {
 public:
-    void register_function(const std::string& name, Function fn);
+    void register_function(
+        const std::string& name,
+        Function fn,
+        size_t nargs,
+        ArityMismatchHandler on_invalid_args = {}
+    );
+
     Function get_function(const std::string& name) const;
 
     static FunctionRegistry default_registry();
@@ -167,6 +180,7 @@ class EvaluationContext {
 public:
     void set_variable(const std::string& name, ExprFloat value);
     ExprFloat get_variable(const std::string& name) const;
+
     static const EvaluationContext& default_context();
 
 private:
@@ -181,15 +195,16 @@ EvaluationContext* get_default_context();
 class VariableExprNode : public ExprNode {
 public:
     // Use predefined context
-    VariableExprNode(std::string name, const EvaluationContext* context = get_default_context())
-        : name_(std::move(name)),
-            resolver_([context](const std::string& varName) {
-                return context->get_variable(varName);
-            }) {}
+    VariableExprNode(std::string name, const EvaluationContext* context = get_default_context()) :
+        name_(std::move(name)),
+        resolver_([context](const std::string& varName) {
+            return context->get_variable(varName);
+        }) {}
 
     // Advanced use case: custom resolver
-    VariableExprNode(std::string name, VariableResolver resolver)
-        : name_(std::move(name)), resolver_(std::move(resolver)) {}
+    VariableExprNode(std::string name, VariableResolver resolver) :
+        name_(std::move(name)),
+        resolver_(std::move(resolver)) {}
 
     ExprFloat evaluate() const override;
 
@@ -197,7 +212,7 @@ public:
     inline void set_context_as_default();
 
 private:
-    std::string name_;
+    std::string      name_;
     VariableResolver resolver_;
 };
 
@@ -205,12 +220,14 @@ private:
 
 class FuncExprNode : public ExprNode {
 public:
-    FuncExprNode(std::string name,
-                    std::vector<ExprNodePtr> args,
-                    const FunctionRegistry* registry = get_default_registry())
-        : name_(std::move(name)),
-            args_(std::move(args)),
-            registry_(registry) {}
+    FuncExprNode(
+        std::string name,
+        std::vector<ExprNodePtr> args,
+        const FunctionRegistry* registry = get_default_registry()
+    ) :
+        name_(std::move(name)),
+        args_(std::move(args)),
+        registry_(registry) {}
 
     ExprFloat evaluate() const override;
 
@@ -218,9 +235,9 @@ public:
     inline void set_registry_as_default();
 
 private:
-    std::string name_;
+    std::string              name_;
     std::vector<ExprNodePtr> args_;
-    const FunctionRegistry* registry_;
+    const FunctionRegistry*  registry_;
 };
 
 
@@ -238,14 +255,14 @@ private:
 
 
 struct Token {
-    TokenType type;
+    TokenType   type;
     std::string text;
-    ExprFloat number_value = 0.0;
+    ExprFloat   number_value = 0.0;
 
     Token() : type(TokenType::Invalid), text(""), number_value(0.0) {}
 
-    Token(TokenType t, const std::string& txt = "", ExprFloat val = 0.0)
-        : type(t), text(txt), number_value(val) {}
+    Token(TokenType t, const std::string& txt = "", ExprFloat val = 0.0) :
+        type(t), text(txt), number_value(val) {}
 
     Token& operator=(const Token& other) = default;
 
@@ -272,8 +289,8 @@ public:
 
 private:
     std::string input_;
-    size_t pos_;
-    Token current_token_;
+    size_t      pos_;
+    Token       current_token_;
 
     void skip_whitespace();
     void parse_number();
@@ -288,14 +305,12 @@ public:
     explicit Parser(Tokenizer tokenizer) :
         tokenizer_(std::move(tokenizer)),
         context_(cppexprpars::get_default_context()),
-        registry_(cppexprpars::get_default_registry())
-        {}
+        registry_(cppexprpars::get_default_registry()) {}
 
     explicit Parser(Tokenizer tokenizer, EvaluationContext* context, FunctionRegistry* registry) :
         tokenizer_(std::move(tokenizer)),
         context_(context),
-        registry_(registry)
-        {}
+        registry_(registry) {}
 
     std::unique_ptr<ExprNode> parse();
 
@@ -308,12 +323,13 @@ public:
     }
 
 private:
-    Tokenizer tokenizer_;
+    Tokenizer          tokenizer_;
     EvaluationContext* context_;
-    FunctionRegistry* registry_;
+    FunctionRegistry*  registry_;
 
     std::unique_ptr<ExprNode> parse_expression(int precedence = 0);
     std::unique_ptr<ExprNode> parse_primary();
+
     int get_precedence(TokenType type) const;
     bool is_right_associative(TokenType type) const;
 };
@@ -324,18 +340,26 @@ class ExprParser {
 public:
     ExprParser() :
         context_(EvaluationContext::default_context()),
-        registry_(FunctionRegistry::default_registry()) { }
+        registry_(FunctionRegistry::default_registry()) {}
 
     void set_expression(const std::string& expr);
+
     void set_variable(const std::string& name, ExprFloat value);
     ExprFloat get_variable(const std::string& name) const;
-    void register_function(const std::string& name, Function fn);
+
+    void register_function(
+        const std::string& name,
+        Function fn,
+        size_t nargs,
+        ArityMismatchHandler on_invalid_args = {}
+    );
+
     ExprFloat evaluate();
 
 private:
-    std::string expression_;
+    std::string       expression_;
     EvaluationContext context_;
-    FunctionRegistry registry_;
+    FunctionRegistry  registry_;
 };
 
 }   // namespace cppexprpars

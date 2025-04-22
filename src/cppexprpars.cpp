@@ -82,44 +82,52 @@ FunctionRegistry FunctionRegistry::default_registry() {
     FunctionRegistry reg;
 
     reg.register_function("sin", [](const std::vector<double>& args) {
-        if (args.size() != 1) throw std::runtime_error("sin expects 1 argument");
         return std::sin(args[0]);
-    });
+    }, 1);
 
     reg.register_function("cos", [](const std::vector<double>& args) {
-        if (args.size() != 1) throw std::runtime_error("cos expects 1 argument");
         return std::cos(args[0]);
-    });
+    }, 1);
 
     reg.register_function("sqrt", [](const std::vector<double>& args) {
-        if (args.size() != 1) throw std::runtime_error("sqrt expects 1 argument");
         return std::sqrt(args[0]);
-    });
+    }, 1);
 
     reg.register_function("min", [](const std::vector<double>& args) {
-        if (args.size() != 2) throw std::runtime_error("min expects 2 arguments");
         return std::min(args[0], args[1]);
-    });
+    }, 2);
 
     reg.register_function("max", [](const std::vector<double>& args) {
-        if (args.size() != 2) throw std::runtime_error("max expects 2 arguments");
         return std::max(args[0], args[1]);
-    });
+    }, 2);
 
-    // TODO: add more functions
+    // TODO: Add more functions
 
     return reg;
 }
 
-void FunctionRegistry::register_function(const std::string& name, Function fn) {
-    functions_[name] = std::move(fn);
+void FunctionRegistry::register_function(
+    const std::string& name,
+    Function fn,
+    size_t nargs,
+    ArityMismatchHandler on_invalid_args
+) {
+    functions_[name] = [fn = std::move(fn), nargs, name, on_invalid_args = std::move(on_invalid_args)]
+                       (const std::vector<ExprFloat>& args) -> ExprFloat
+    {
+        if (args.size() == nargs)
+            return fn(args);
+        if (!on_invalid_args)
+            throw std::runtime_error(name + " expects " + std::to_string(nargs) + " arguments");
+        on_invalid_args(name, nargs, args.size());
+        return std::numeric_limits<ExprFloat>::quiet_NaN();     // THINK: What is better here?
+    };
 }
 
 Function FunctionRegistry::get_function(const std::string& name) const {
     auto it = functions_.find(name);
-    if (it == functions_.end()) {
+    if (it == functions_.end())
         throw std::runtime_error("Unknown function: " + name);
-    }
     return it->second;
 }
 
@@ -437,8 +445,13 @@ ExprFloat ExprParser::get_variable(const std::string& name) const {
     return context_.get_variable(name);
 }
 
-void ExprParser::register_function(const std::string& name, Function fn) {
-    registry_.register_function(name, fn);
+void ExprParser::register_function(
+    const std::string& name,
+    Function fn,
+    size_t nargs,
+    ArityMismatchHandler on_invalid_args
+) {
+    registry_.register_function(name, fn, nargs, on_invalid_args);
 }
 
 ExprFloat ExprParser::evaluate() {

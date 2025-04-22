@@ -1,30 +1,8 @@
-// #include "cppexprpars/tokenizer.hpp"
-// #include "cppexprpars/parser.hpp"
-// #include "cppexprpars/expr_node.hpp"
-// #include "cppexprpars/function.hpp"
-
 #include "cppexprpars.hpp"
-
 #include <iostream>
-#include <cmath>
-#include <stdexcept>
 #include <cassert>
-#include <unordered_map>
 
 using namespace cppexprpars;
-
-// Define a simple variable resolver using an unordered_map
-// std::unordered_map<std::string, double> variables = {
-//     {"x", 10.0}, // predefined variable for testing
-// };
-
-// Simple function to resolve variables directly from the map
-// double resolve_variable(const std::string& name) {
-//     if (variables.find(name) != variables.end()) {
-//         return variables[name];
-//     }
-//     throw std::runtime_error("Unknown variable: " + name);
-// }
 
 void test_constant_expression() {
     Tokenizer tokenizer("3.14");
@@ -42,18 +20,17 @@ void test_variable_expression() {
     context.set_variable("x", 10.0);
     cppexprpars::set_default_context(&context);
 
-    // Use the simple variable resolver to resolve "x"
     auto expr = parser.parse();
     assert(std::abs(expr->evaluate() - 12.0) < 1e-6); // 10.0 (x) + 2 = 12.0
     std::cout << "test_variable_expression passed!" << std::endl;
 }
 
 void test_variable_expression_2() {
-    ExprParser parser;  // Automatically loads with default_context() and default_registry()
+    ExprParser parser;      // Automatically loads with default_context() and default_registry()
     parser.set_expression("x + 2");
     parser.set_variable("x", 10.0);
     ExprFloat result = parser.evaluate();
-    assert(std::abs(result - 12.0) < 1e-6); // 10.0 (x) + 2 = 12.0
+    assert(std::abs(result - 12.0) < 1e-6);     // 10.0 (x) + 2 = 12.0
     std::cout << "test_variable_expression passed!" << std::endl;
 }
 
@@ -76,11 +53,11 @@ void test_binary_expression() {
 
     // Use the simple variable resolver to resolve "x"
     auto expr = parser.parse();
-    assert(std::abs(expr->evaluate() - 32.0) < 1e-6); // 2 + 3 * 10 = 32.0
+    assert(std::abs(expr->evaluate() - 32.0) < 1e-6);   // 2 + 3 * 10 = 32.0
     std::cout << "test_binary_expression passed!" << std::endl;
 }
 
-int main() {
+int main(void) {
     try {
         test_constant_expression();
         test_variable_expression();
@@ -93,6 +70,4 @@ int main() {
         std::cerr << "Test failed: " << e.what() << std::endl;
         return 1;
     }
-
-    return 0;
 }
